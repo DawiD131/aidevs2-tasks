@@ -39,7 +39,6 @@ execTask("search").then(async ({ question, sendAnswer }) => {
 
     const points = [];
     for (const document of documents) {
-      console.log(document);
       const [embedding] = await embeddings.embedDocuments([document.info]);
       points.push({
         id: document.metadata.id,
@@ -75,5 +74,6 @@ execTask("search").then(async ({ question, sendAnswer }) => {
     },
   });
 
+  console.log(search[0].payload.url);
   sendAnswer(search[0].payload.url);
 });
