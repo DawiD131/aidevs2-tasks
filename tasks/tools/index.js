@@ -1,8 +1,7 @@
-import { ChatOpenAI } from "langchain/chat_models/openai";
-import { HumanMessage } from "langchain/schema";
 import { execTask } from "../../execTask.js";
+import { ChatOpenAI } from "langchain/chat_models/openai";
 import { functionsSchema } from "./functions-schema.js";
-import { functionsCaller } from "./functionsCaller.js";
+import { HumanMessage, SystemMessage } from "langchain/schema";
 
 const parseFunctionCall = (result) => {
   if (result?.additional_kwargs?.function_call === undefined) {
@@ -13,20 +12,23 @@ const parseFunctionCall = (result) => {
     args: JSON.parse(result.additional_kwargs.function_call.arguments),
   };
 };
-
-execTask("knowledge").then(async ({ question, sendAnswer }) => {
+execTask("tools").then(async ({ question, sendAnswer }) => {
   const model = new ChatOpenAI({
     modelName: "gpt-4-0613",
   }).bind({
     functions: functionsSchema,
   });
-  const result = await model.invoke([new HumanMessage(question.question)]);
+  const result = await model.invoke([
+    new SystemMessage(`
+      context###
+      today is ${new Date()}
+      ### 
+      `),
+    new HumanMessage(question.question),
+  ]);
 
   const action = parseFunctionCall(result);
-
-  console.log(action);
   if (action) {
-    const answer = await functionsCaller(action.name, action.args.question);
-    await sendAnswer(answer);
+    await sendAnswer({ tool: action.name, ...action.args });
   }
 });
